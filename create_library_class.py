@@ -22,7 +22,7 @@ class CreateLibrary:
         self.constellation = []
         self.database = {}
 
-        self.sql = db.SetDataBase('shazamdb.db')
+        self.sql = db.SetDataBase('Data/shazamdb.db')
 
     def create_spectograph(self):
         """Loads the music file and returns abs(stft)"""

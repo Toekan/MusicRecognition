@@ -7,7 +7,8 @@ import numpy as np
 import operator
 import pyfftw
 import math
-import collections
+from collections import Counter
+from collections import defaultdict
 import time
 
 import librosa
@@ -51,13 +52,13 @@ class Constellation:
         self.valueerrors = []
         self.keys_list = []
 
-        self.t_delta_hist = {}
-        self.t_delta_hist_tracker = {}
+        self.t_delta_hist = defaultdict(lambda: Counter())
+        self.t_delta_hist_tracker = defaultdict(lambda: defaultdict(lambda: []))
         self.bestbinlist = []
         self.anchorpoints = []
         self.database = {}
 
-        self.sql = db.SetDataBase('shazamdb3.db')
+        self.sql = db.SetDataBase('Data/shazamdb.db')
 
 
     def analyze_recording_piece(self, y, songID = None):
@@ -172,27 +173,20 @@ class Constellation:
                         try:
                             time_anchor_abs,songID = int(str(value)[:-5]),int(str(value)[-5:])
                             t_delta = time_anchor_abs - pointt
-                            if songID in self.t_delta_hist:
-                                self.t_delta_hist[songID][t_delta] += 1
-                                if t_delta in self.t_delta_hist_tracker[songID]:
-                                    self.t_delta_hist_tracker[songID][t_delta].extend([(anchort,anchorf),(pointt,pointf)])
-                                else:
-                                    self.t_delta_hist_tracker[songID][t_delta] = [(anchort,anchorf),(pointt,pointf)]
-                            else:
-                                self.t_delta_hist[songID] = collections.Counter()
-                                self.t_delta_hist[songID][t_delta] += 1
-                                #This is purely for the matching_peaks function
-                                self.t_delta_hist_tracker[songID] = {}
-                                self.t_delta_hist_tracker[songID][t_delta] = [(anchort,anchorf),(pointt,pointf)]
-
+                            self.t_delta_hist[songID][t_delta] += 1
+                            self.t_delta_hist_tracker[songID][t_delta]\
+                                            .extend([(anchort,anchorf),(pointt,pointf)])
                         except ValueError:
                             self.valueerrors.append(value)
+
+
 
     def best_song_match(self):
         """goes through the t_delta_hist and finds the best bin for each song, the
         correct song should have one bin that is considerably higher than all the
         other bins of all other songs."""
 
+        self.bestbinlist = []
         for songID in self.t_delta_hist:
             bestbintuple = max(self.t_delta_hist[songID].items(), key=operator.itemgetter(1))
             bestbint,bestbinvalue = bestbintuple[0],bestbintuple[1]

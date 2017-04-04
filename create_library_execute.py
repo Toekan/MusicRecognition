@@ -17,7 +17,7 @@ for root, dirs, files in os.walk(r"C:\Users\Frederik\Dropbox\MUSIC"):
 songid = 0
 songlibrary = {}
 print(time.clock())
-for file in mp3files:
+for file in mp3files[:100]:
     metadata = os.stat(file)
     if metadata.st_size/10**6 < 25:
         print(file)
@@ -40,7 +40,7 @@ for file in mp3files:
     else:
         print(metadata.st_size/10**6)
 
-pickle.dump(songlibrary, open("SonglibraryNEW.p", "wb"))
+pickle.dump(songlibrary, open("Data/Songlibrary.p", "wb"))
 
 cl.print_specint(song.S)
 cl.plot_constellation(song.constellation,song.S)
