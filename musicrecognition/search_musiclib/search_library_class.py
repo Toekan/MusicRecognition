@@ -10,17 +10,16 @@ from collections import Counter
 from collections import defaultdict
 
 
-import librosa
 from musicrecognition.sql_database import database as db
 
 class Constellation:
     """Class that contains the contellation map and the hash table as instance
     variables. Input is the part of the spectrograph that was newly recorded."""
 
-    borders = [2,10,20,40,80,160,500]
-    coeff = [2.2,1.5,1.5,1.5,1.5,1]
+    borders = [2, 10, 20, 40, 80, 160, 500]
+    coeff = [2.2, 1.5, 1.5, 1.5, 1.5, 1]
 
-    def __init__(self,windowsize,hoplength,localregion):
+    def __init__(self,windowsize, hoplength, localregion):
         """Initializes the instance. Windowsize is the windowsize of the FFT,
         so n_fft. Hoplength is the stepsize in the STFT. Localregion is the region
         around the time-point that is used to create the limits for creating
@@ -59,7 +58,7 @@ class Constellation:
 
 
 
-    def analyze_recording_piece(self, y, songID = None):
+    def analyze_recording_piece(self, y, cursor):
         """Put y as input, which should received through recording and have the right
          length (= hoplength). This method takes all the other ones to go from this
          recording to create constellation points and search through the database
@@ -68,7 +67,7 @@ class Constellation:
             self.fft(y)
             self.update_localregion()
             self.take_peaks()
-            self.search_and_sort()
+            self.search_and_sort(cursor)
         else:
             self.preparefft(y)
 
@@ -140,20 +139,6 @@ class Constellation:
         self.constellation.extend(subconstellation)
         self.new_points = len(subconstellation)
 
-    def create_targetzones(self,songID):
-        """adds points to the database instead of searching it. This function is to
-        add songs to the database!"""
-
-        for i in range(len(self.constellation)-self.new_points,len(self.constellation)):
-            pointt = int(self.constellation[i][0])
-            pointf = int(self.constellation[i][1])
-            for key,anchor_t in ((int(str(elem[1])+str(pointf)+str(pointt-elem[0])),elem[0])
-                                     for elem in self.constellation[i-8:i-3]):
-                if key in self.database:
-                    self.database[key].append(int(str(anchor_t)+str(songID).zfill(5)))
-                else:
-                    self.database[key] = [int(str(anchor_t)+str(songID).zfill(5))]
-
     def search_and_sort(self, cursor):
         """Taking every newly created point in the last frame, making the key for it,
          searching the library, and adding everything in the right [SongID][delta_t]
@@ -176,8 +161,6 @@ class Constellation:
                                             .extend([(anchort,anchorf),(pointt,pointf)])
                         except ValueError:
                             self.valueerrors.append(value)
-
-
 
     def best_song_match(self):
         """goes through the t_delta_hist and finds the best bin for each song, the
@@ -202,7 +185,6 @@ class Constellation:
         beta = 0.46
         return alpha - beta*math.cos(2*math.pi*n/(N-1))
 
-
     def matching_peaks(self):
         """After the matching song (correct or wrong) has been found, this method
         checks which target points actually contributed to the match. This way we can
@@ -215,7 +197,6 @@ class Constellation:
         songID = bestbinlist_final[0][0]
         bestbintuple = max(self.t_delta_hist[songID].items(), key=operator.itemgetter(1))
         bestbint, bestbinvalue = bestbintuple[0], bestbintuple[1]
-
 
         for i in range(bestbint - 2, bestbint + 3):
             if i in self.t_delta_hist_tracker[songID]:
