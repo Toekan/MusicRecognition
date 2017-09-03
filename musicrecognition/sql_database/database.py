@@ -1,12 +1,36 @@
 import sqlite3
 
-
 def add_values(cursor, key, values):
     """Adding key-value pairs to the database, one key has a variable
     length list of values."""
 
     for value in values:
         cursor.execute('INSERT INTO hashtable VALUES(?,?)', (key, value))
+
+
+def add_full_dictionary(connection, dictionary_song):
+    """Taking the whole database of this song and put it in the SQL
+    database, using function of the sql_database package."""
+
+    cursor = connection.cursor()
+    for key in dictionary_song:
+        add_values(cursor, key, dictionary_song[key])
+    connection.commit()
+
+
+def add_songid_to_songlist(connection, songid, songname):
+    """"""
+    connection.cursor().execute('INSERT INTO songlist VALUES(?,?)',
+                                (songid, songname))
+    connection.commit()
+
+
+def get_song_from_id(connection, songid):
+    """"""
+    songname = connection.cursor().execute('SELECT songname FROM songlist '
+                              'WHERE songID = ?',
+                              (songid,)).fetchall()
+    return songname
 
 
 def get_values(cursor, key):

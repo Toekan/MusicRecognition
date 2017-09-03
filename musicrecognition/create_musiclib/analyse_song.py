@@ -4,10 +4,10 @@ from scipy import signal
 import librosa
 
 from . import matrixslider
-from musicrecognition.sql_database import database as db
+import sql_database.database as db
 
 
-class CreateLibrary:
+class AnalyseSong:
     """All the methods needed to create datapoints of full songs,
     so used to create the library from my the tracks loaded in"""
 
@@ -46,19 +46,19 @@ class CreateLibrary:
         time = np.arange(max_time)
 
         for i in range(0, 6):
-            values[i] = np.amax(self.S[CreateLibrary.borders_[i]:
-                                    CreateLibrary.borders_[i+1]], axis=0)
-            freq[i] = np.argmax(self.S[CreateLibrary.borders_[i]:
-                                    CreateLibrary.borders_[i+1]], axis=0)
+            values[i] = np.amax(self.S[AnalyseSong.borders_[i]:
+                                    AnalyseSong.borders_[i+1]], axis=0)
+            freq[i] = np.argmax(self.S[AnalyseSong.borders_[i]:
+                                    AnalyseSong.borders_[i+1]], axis=0)
 
         for Ssub, pos in matrixslider.MatrixSlide(values, 60, 1):
             for i in range(0, 6):
                 Ssubrow = Ssub[i]
                 av = np.average(Ssubrow)
                 std = np.std(Ssubrow)
-                if values[i][pos] > av + CreateLibrary.coeff_[i]*std:
+                if values[i][pos] > av + AnalyseSong.coeff_[i]*std:
                     self.constellation.append((int(time[pos]),
-                                int(freq[i][pos]) + CreateLibrary.borders_[i]))
+                                int(freq[i][pos]) + AnalyseSong.borders_[i]))
 
         self.constellation = sorted(self.constellation,
                                     key=operator.itemgetter(0))
@@ -89,7 +89,3 @@ class CreateLibrary:
 
         for key in self.database:
             db.add_values(cursor, key, self.database[key])
-
-
-
-

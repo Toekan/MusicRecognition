@@ -2,11 +2,20 @@ import pyaudio
 from struct import *
 
 
-class Recording:
-    '''Class used to record music from the microphone'''
+def function_recording(conn):
+    """Function that keeps the recording instance going and puts
+    the blocks (of hoplength) in the multiprocessing queue.
+    Input: multiprocessing Queue"""
+    recordinst = Recording()
+    while True:
+        y = recordinst.record()
+        conn.put(y)
 
-    def __init__(self):
-        self.CHUNK = 2048
+class Recording:
+    """Class used to record music from the microphone"""
+
+    def __init__(self, hoplength = 2048):
+        self.CHUNK = hoplength
         FORMAT = pyaudio.paFloat32
         CHANNELS = 1
         RATE = 44100
@@ -14,7 +23,7 @@ class Recording:
         self.p = pyaudio.PyAudio()
 
         self.stream = self.p.open(format=FORMAT,
-                            channels = CHANNELS,
+                            channels=CHANNELS,
                             rate=RATE,
                             input=True,
                             frames_per_buffer=self.CHUNK)
@@ -28,8 +37,3 @@ class Recording:
         self.stream.stop_stream()
         self.stream.close()
         self.p.terminate()
-
-
-
-
-

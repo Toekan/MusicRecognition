@@ -10,16 +10,17 @@ from collections import Counter
 from collections import defaultdict
 
 
-from musicrecognition.sql_database import database as db
+from sql_database import database as db
 
-class Constellation:
-    """Class that contains the contellation map and the hash table as instance
+
+class AnalyseSong:
+    """Class that contains the constellation map and the hash table as instance
     variables. Input is the part of the spectrograph that was newly recorded."""
 
     borders = [2, 10, 20, 40, 80, 160, 500]
     coeff = [2.2, 1.5, 1.5, 1.5, 1.5, 1]
 
-    def __init__(self,windowsize, hoplength, localregion):
+    def __init__(self, windowsize, hoplength, localregion):
         """Initializes the instance. Windowsize is the windowsize of the FFT,
         so n_fft. Hoplength is the stepsize in the STFT. Localregion is the region
         around the time-point that is used to create the limits for creating
@@ -30,7 +31,7 @@ class Constellation:
         self.localregion = localregion
 
         self.y = pyfftw.empty_aligned(windowsize, dtype='complex64')
-        self.window = np.array(list(Constellation.hamming(n,self.windowsize)
+        self.window = np.array(list(AnalyseSong.hamming(n,self.windowsize)
                                     for n in range(self.windowsize)))
         self.y_withwindow = pyfftw.empty_aligned(windowsize, dtype='complex64')
         self.Ssingleline = pyfftw.empty_aligned(windowsize, dtype='complex64')
@@ -56,8 +57,6 @@ class Constellation:
         self.anchorpoints = []
         self.database = {}
 
-
-
     def analyze_recording_piece(self, y, cursor):
         """Put y as input, which should received through recording and have the right
          length (= hoplength). This method takes all the other ones to go from this
@@ -70,7 +69,6 @@ class Constellation:
             self.search_and_sort(cursor)
         else:
             self.preparefft(y)
-
 
     def preparefft(self,y):
         """Fills up the y far enough to do the first FFT, important when hoplength is
@@ -112,11 +110,11 @@ class Constellation:
 
         for i in range(0,6):
             self.values[i,self.localregion-1] = np.amax(self.Ssingleline
-                                                        [Constellation.borders[i]:
-                                                        Constellation.borders[i+1]])
+                                                        [AnalyseSong.borders[i]:
+                                                        AnalyseSong.borders[i+1]])
             self.freq[i,self.localregion-1] = np.argmax(self.Ssingleline
-                                                        [Constellation.borders[i]:
-                                                        Constellation.borders[i+1]])
+                                                        [AnalyseSong.borders[i]:
+                                                        AnalyseSong.borders[i+1]])
 
         self.pos += 1
 
@@ -132,9 +130,9 @@ class Constellation:
             av = np.average(self.values[i][max((0,self.localregion-self.pos)):])
             std = np.std(self.values[i][max((0,self.localregion-self.pos)):])
 
-            if self.values[i][self.localregion/2] > av + Constellation.coeff[i]*std:
+            if self.values[i][self.localregion/2] > av + AnalyseSong.coeff[i]*std:
                 subconstellation.append((int(time),int(self.freq[i][self.localregion/2])
-                                         +Constellation.borders[i]))
+                                         + AnalyseSong.borders[i]))
 
         self.constellation.extend(subconstellation)
         self.new_points = len(subconstellation)
@@ -201,6 +199,3 @@ class Constellation:
         for i in range(bestbint - 2, bestbint + 3):
             if i in self.t_delta_hist_tracker[songID]:
                 self.anchorpoints.extend(self.t_delta_hist_tracker[songID][i])
-        print(len(self.anchorpoints))
-
-
