@@ -1,0 +1,8 @@
+.idea/
+
+*.pyc
+*.pyo
+
+dist/
+build/
+data/*
