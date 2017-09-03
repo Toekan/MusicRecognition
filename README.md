@@ -15,11 +15,11 @@ Uses the following packages:
 
 Command line interface:
 
-'''
+```
 Usage:
  musicrecognition create <pathdirsong> <namedb> [--size=<number>]
  musicrecognition search <namedb>
 
 Options:
  --size=<number>  Maximum number of songs added to db [default: 1000]
-'''
+```
