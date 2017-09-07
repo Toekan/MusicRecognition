@@ -116,5 +116,5 @@ if arguments['search']:
         plt.show()
 
         plot.print_specint(constellation.Stotal)
-        plot.plot_constellation(constellation.anchorpoints,constellation.Stotal)
+        plot.plot_constellation(constellation.anchorpoints, constellation.Stotal)
         plt.show()

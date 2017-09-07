@@ -1,6 +1,6 @@
-'''Module for making the constellation map. Contains take_peaks(S)
+"""Module for making the constellation map. Contains take_peaks(S)
 (which returns a list of (time,freq) tuples of all the peaks.
-plot_constellation(constellation,S) creates a plot of the constellation points'''
+plot_constellation(constellation,S) creates a plot of the constellation points"""
 
 import numpy as np
 import operator
@@ -58,10 +58,11 @@ class AnalyseSong:
         self.database = {}
 
     def analyze_recording_piece(self, y, cursor):
-        """Put y as input, which should received through recording and have the right
-         length (= hoplength). This method takes all the other ones to go from this
-         recording to create constellation points and search through the database
-         for matches."""
+        """Put y as input, which should received through recording and have the
+        right length (= hoplength). This method takes all the other ones to go
+        from this recording to create constellation points and search through
+        the database for matches."""
+
         if self.pos >= 1:
             self.fft(y)
             self.update_localregion()
@@ -71,24 +72,25 @@ class AnalyseSong:
             self.preparefft(y)
 
     def preparefft(self,y):
-        """Fills up the y far enough to do the first FFT, important when hoplength is
-         not the same as the windowsize!"""
+        """Fills up the y far enough to do the first FFT, important when
+        hoplength is not the same as the windowsize!"""
+
         if self.pos < int(self.windowsize/self.hoplength)-1:
             self.y[0:self.windowsize-self.hoplength] = self.y[self.hoplength:]
             self.y[self.windowsize-self.hoplength:] = y
             self.pos += 1
 
     def fft(self,y):
-        """takes the recorded input (of length hop length!), shoves at the end of
-        self.y, which has length windowsize, calculates the DFT (by pyfftw FFT),
-        Stores it into the instance variable Ssingleline.
-        Make sure it's a vertical vector."""
+        """takes the recorded input (of length hop length!), shoves at the end
+        of self.y, which has length windowsize, calculates the DFT (by pyfftw
+        FFT), stores it into the instance variable Ssingleline. Make sure it's
+        a vertical vector."""
 
         self.y[0:self.windowsize-self.hoplength] = self.y[self.hoplength:]
         self.y[self.windowsize-self.hoplength:] = y
 
-        #the pyfftw seems to lack a window function, so transforming it myself first
-        #with a hamming function
+        #the pyfftw seems to lack a window function, so transforming it first
+        # with a hamming function.
         self.y_withwindow[:] = self.window * self.y
         self.Ssingleline = self.fft_object()
         self.Ssingleline = self.Ssingleline[:2049]
@@ -100,8 +102,8 @@ class AnalyseSong:
             self.Stotal = np.absolute(self.Ssingleline[:])
 
     def update_localregion(self):
-        """Ssub is the part of the spectrograph that is the environment of the line
-        being analyzed, as to provide a reference for mean values and std.
+        """Ssub is the part of the spectrograph that is the environment of the
+        line being analyzed, as to provide a reference for mean values and std.
         This Ssub is created here by deleting the first line and adding a line
         at the end."""
 
@@ -110,18 +112,18 @@ class AnalyseSong:
 
         for i in range(0,6):
             self.values[i,self.localregion-1] = np.amax(self.Ssingleline
-                                                        [AnalyseSong.borders[i]:
-                                                        AnalyseSong.borders[i+1]])
+                                                    [AnalyseSong.borders[i]:
+                                                    AnalyseSong.borders[i+1]])
             self.freq[i,self.localregion-1] = np.argmax(self.Ssingleline
-                                                        [AnalyseSong.borders[i]:
-                                                        AnalyseSong.borders[i+1]])
+                                                    [AnalyseSong.borders[i]:
+                                                    AnalyseSong.borders[i+1]])
 
         self.pos += 1
 
     def take_peaks(self):
         """Input is the absolute value of the spectrograph (as created in
-        give_specint), creates a list of tuples (time, frequency) of all the peaks.
-        This is the constellation map"""
+        give_specint), creates a list of tuples (time, frequency) of all the
+        peaks. This is the constellation map"""
 
         time = self.pos - self.localregion/2 - 1
         subconstellation = []
@@ -131,32 +133,37 @@ class AnalyseSong:
             std = np.std(self.values[i][max((0,self.localregion-self.pos)):])
 
             if self.values[i][self.localregion/2] > av + AnalyseSong.coeff[i]*std:
-                subconstellation.append((int(time),int(self.freq[i][self.localregion/2])
+                subconstellation.append((int(time),
+                                         int(self.freq[i][self.localregion/2])
                                          + AnalyseSong.borders[i]))
 
         self.constellation.extend(subconstellation)
         self.new_points = len(subconstellation)
 
     def search_and_sort(self, cursor):
-        """Taking every newly created point in the last frame, making the key for it,
-         searching the library, and adding everything in the right [SongID][delta_t]
-         bin of the histograms."""
+        """Taking every newly created point in the last frame, making the key
+        for it, searching the library, and adding everything in the right
+        [SongID][delta_t] bin of the histograms."""
 
-        for i in range(len(self.constellation)-self.new_points,len(self.constellation)):
+        for i in range(len(self.constellation)-self.new_points,
+                                                len(self.constellation)):
             pointt = int(self.constellation[i][0])
             pointf = int(self.constellation[i][1])
-            for key,anchort,anchorf in ((int(str(elem[1])+str(pointf)+str(pointt-elem[0])),elem[0],elem[1])
-                        for elem in self.constellation[i-8:i-3]):
+            for key,anchort,anchorf in \
+                    ((int(str(elem[1])+str(pointf)+str(pointt-elem[0])),
+                      elem[0],elem[1]) for elem in self.constellation[i-8:i-3]):
                 self.keys_list.append(key)
                 values = db.get_values(cursor, key)
                 if values:
                     for value in values:
                         try:
-                            time_anchor_abs,songID = int(str(value)[:-5]),int(str(value)[-5:])
+                            time_anchor_abs, songID = int(str(value)[:-5]),\
+                                                     int(str(value)[-5:])
                             t_delta = time_anchor_abs - pointt
                             self.t_delta_hist[songID][t_delta] += 1
                             self.t_delta_hist_tracker[songID][t_delta]\
-                                            .extend([(anchort,anchorf),(pointt,pointf)])
+                                            .extend([(anchort, anchorf),
+                                                     (pointt, pointf)])
                         except ValueError:
                             self.valueerrors.append(value)
 
@@ -167,14 +174,13 @@ class AnalyseSong:
 
         self.bestbinlist = []
         for songID in self.t_delta_hist:
-            bestbintuple = max(self.t_delta_hist[songID].items(), key=operator.itemgetter(1))
-            bestbint,bestbinvalue = bestbintuple[0],bestbintuple[1]
+            bestbintuple = max(self.t_delta_hist[songID].items(),
+                               key=operator.itemgetter(1))
+            bestbint, bestbinvalue = bestbintuple[0], bestbintuple[1]
             bestbin = 0
             for i in range(bestbint-2,bestbint+3):
                 bestbin += self.t_delta_hist[songID][i]
-
-            self.bestbinlist.append((songID,bestbin))
-
+            self.bestbinlist.append((songID, bestbin))
         return self.bestbinlist
 
     @staticmethod
@@ -191,9 +197,11 @@ class AnalyseSong:
         Input:      Takes the list of the anchorpoint - elementpoint duos
         Output:     All the peak points that were part of a matching duo
                     within the time coherency calculated in best_match_song"""
-        bestbinlist_final = sorted(self.bestbinlist, key=operator.itemgetter(1), reverse=True)
+        bestbinlist_final = sorted(self.bestbinlist, key=operator.itemgetter(1),
+                                   reverse=True)
         songID = bestbinlist_final[0][0]
-        bestbintuple = max(self.t_delta_hist[songID].items(), key=operator.itemgetter(1))
+        bestbintuple = max(self.t_delta_hist[songID].items(),
+                           key=operator.itemgetter(1))
         bestbint, bestbinvalue = bestbintuple[0], bestbintuple[1]
 
         for i in range(bestbint - 2, bestbint + 3):
